@@ -1,0 +1,99 @@
+/* Menú */
+"Acerca de Ferry" = "About Ferry";
+"Mostrar / ocultar estantería" = "Show / hide shelf";
+"Pegar en la app activa" = "Paste into the active app";
+"Cortes recientes (devolver al origen)…" = "Recent cuts (return to origin)…";
+"Instalar «Traer de Ferry» en el Finder" = "Install “Bring from Ferry” in Finder";
+"Quitar «Traer de Ferry» del Finder" = "Remove “Bring from Ferry” from Finder";
+"Vaciar estantería" = "Empty shelf";
+"Al soltar el archivo" = "When dropping a file";
+"Cortar (mover el original)" = "Cut (move the original)";
+"Copiar (dejar el original)" = "Copy (keep the original)";
+"Preguntar al soltar imágenes (convertir)" = "Ask when dropping images (convert)";
+"Abrir al iniciar sesión" = "Open at login";
+"Recordar archivos al cerrar" = "Remember files on quit";
+"Ajustes…" = "Settings…";
+"Salir" = "Quit";
+"© 2026 ChocolitosSoft. Todos los derechos reservados." = "© 2026 ChocolitosSoft. All rights reserved.";
+
+/* Avisos */
+"No se pudo cambiar el inicio automático" = "Couldn’t change launch at login";
+"Copia la app a Aplicaciones y vuelve a intentarlo." = "Copy the app to Applications and try again.";
+"Acción quitada" = "Action removed";
+"«Traer de Ferry» ya no aparece en el menú del Finder." = "“Bring from Ferry” no longer appears in the Finder menu.";
+"No se encontró la acción" = "Action not found";
+"Esta copia de Ferry no incluye la Acción rápida." = "This copy of Ferry doesn’t include the Quick Action.";
+"Acción instalada" = "Action installed";
+"Haz clic derecho sobre una carpeta (o en el fondo de una carpeta) del Finder → Acciones rápidas → «Traer de Ferry».\n\nSi no aparece, actívala en Ajustes del Sistema → Teclado → Atajos de teclado → Servicios → Archivos y carpetas." = "Right-click a folder (or the background of a folder) in Finder → Quick Actions → “Bring from Ferry”.\n\nIf it doesn’t appear, enable it in System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.";
+"No se pudo instalar" = "Couldn’t install";
+"Atajo no disponible" = "Shortcut unavailable";
+"Ese atajo ya lo usa el sistema u otra app. Se ha restablecido el atajo por defecto." = "That shortcut is already used by the system or another app. The default shortcut has been restored.";
+"La estantería está vacía" = "The shelf is empty";
+"No hay nada que traer a %@." = "There’s nothing to bring to %@.";
+"No se pudo pegar todo" = "Couldn’t paste everything";
+"No se pudo hablar con el Finder" = "Couldn’t talk to Finder";
+"Permite que Ferry controle el Finder en Ajustes → Privacidad y seguridad → Automatización." = "Allow Ferry to control Finder in Settings → Privacy & Security → Automation.";
+"Abre una carpeta" = "Open a folder";
+"La ventana activa del Finder no es una carpeta (por ejemplo, Recientes). Abre la carpeta de destino y vuelve a intentarlo." = "The active Finder window isn’t a folder (for example, Recents). Open the destination folder and try again.";
+"Ferry necesita permiso de Accesibilidad" = "Ferry needs Accessibility permission";
+"Actívalo en Ajustes → Privacidad y seguridad → Accesibilidad para que Ferry pueda pulsar ⌘V por ti.\n\nMientras tanto, los elementos ya están en el portapapeles: pulsa ⌘V tú mismo." = "Enable it in Settings → Privacy & Security → Accessibility so Ferry can press ⌘V for you.\n\nMeanwhile, the items are already on the clipboard: press ⌘V yourself.";
+"No se pudo cortar el original" = "Couldn’t cut the original";
+"Es posible que macOS necesite permiso de acceso a esa carpeta (Ajustes → Privacidad y seguridad → Archivos y carpetas / Acceso total al disco)." = "macOS may need permission to access that folder (Settings → Privacy & Security → Files and Folders / Full Disk Access).";
+"No se encontró el archivo" = "File not found";
+"%@ ya no está en la carpeta de cortados de Ferry." = "%@ is no longer in Ferry’s cut-files folder.";
+"No se pudo devolver" = "Couldn’t return it";
+
+/* Estantería */
+"Suelta aquí archivos, texto o enlaces" = "Drop files, text or links here";
+"Pegar en la app activa: %@" = "Paste into the active app: %@";
+"Cortes recientes" = "Recent cuts";
+"Estantería" = "Shelf";
+"Estantería · %d" = "Shelf · %d";
+"Quitar selección" = "Clear selection";
+"Seleccionar todo" = "Select all";
+"Vaciar" = "Empty";
+"Volver a la estantería" = "Back to the shelf";
+"Quitar de la estantería (el archivo sigue en su origen)" = "Remove from the shelf (the file stays at its origin)";
+"Aún no has cortado ningún archivo" = "You haven’t cut any files yet";
+"Aquí podrás devolverlos a su origen durante %d días" = "Here you can return them to their origin for %d days";
+"Devolver" = "Return";
+"Devolver al origen: %@" = "Return to origin: %@";
+
+/* Imágenes */
+"¿Cómo quieres entregar las imágenes?" = "How do you want to deliver the images?";
+"¿Cómo quieres entregar la imagen?" = "How do you want to deliver the image?";
+"%@ y otras %d. La elección se aplica a todas." = "%@ and %d more. Your choice applies to all of them.";
+"Original" = "Original";
+"Convertir a JPG" = "Convert to JPG";
+"Convertir a PNG" = "Convert to PNG";
+"Reducir tamaño (JPG, %d px)" = "Reduce size (JPG, %d px)";
+"No se pudo leer la imagen." = "Couldn’t read the image.";
+"No se pudo guardar la imagen convertida." = "Couldn’t save the converted image.";
+
+/* Ajustes */
+"Ajustes de Ferry" = "Ferry Settings";
+"Atajo de teclado" = "Keyboard shortcut";
+"Pegar la estantería" = "Paste the shelf";
+"Pulsa el atajo…" = "Press the shortcut…";
+"Restablecer" = "Reset";
+"Usa al menos ⌃, ⌥ o ⌘ junto con la tecla." = "Use at least ⌃, ⌥ or ⌘ together with the key.";
+"Espacio" = "Space";
+"Recoger la estantería vacía" = "Hide the empty shelf";
+"a los 5 segundos" = "after 5 seconds";
+"a los 10 segundos" = "after 10 seconds";
+"a los 30 segundos" = "after 30 seconds";
+"al minuto" = "after 1 minute";
+"nunca" = "never";
+"Dónde aparece" = "Where it appears";
+"Automático (junto al cursor al sacudir)" = "Automatic (next to the cursor when shaking)";
+"Siempre junto al cursor" = "Always next to the cursor";
+"Borde derecho" = "Right edge";
+"Borde izquierdo" = "Left edge";
+"Centro de la pantalla" = "Center of the screen";
+"Sacudir para abrir" = "Shake to open";
+"Sensibilidad" = "Sensitivity";
+"Baja" = "Low";
+"Media" = "Medium";
+"Alta" = "High";
+"Cuanto más alta, menos hace falta sacudir el ratón mientras arrastras." = "The higher it is, the less you need to shake the mouse while dragging.";
+"Cortes recientes (devolver al origen)" = "Recent cuts (return to origin)";
