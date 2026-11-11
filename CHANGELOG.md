@@ -3,6 +3,12 @@
 Versión actual: ver el archivo `VERSION`. Para publicar una nueva, cambia `VERSION`
 y ejecuta `./make-dmg.sh`.
 
+## 1.4.1 — 2026-11-11 · Seguridad
+- **El enlace `ferry://bring` ya no actúa sin preguntar.** Valida la ruta (debe ser una carpeta existente y escribible; se rechazan `~/Library`, carpetas del sistema y carpetas ocultas), muestra siempre una confirmación con la ruta completa y solo **copia**: nunca mueve los originales cuando la orden viene de un enlace. Un enlace de una web ya no puede mandar tus archivos a donde quiera. La Acción rápida «Traer de Ferry» sigue funcionando y ahora pasa por esa confirmación.
+- El historial de «Cortados» se valida antes de borrar o mover algo: un `estado.json` alterado ya no puede hacer que Ferry toque archivos fuera de su carpeta.
+- Al pegar con ⌘V, Ferry solo restaura tu portapapeles si no copiaste nada mientras tanto, marca lo que escribe como temporal y no respalda contenido oculto (por ejemplo, contraseñas de un gestor).
+- Las carpetas de Ferry y su estado se crean solo para tu usuario (permisos 0700 y 0600), y los temporales viejos se limpian también al abrir.
+
 ## 1.4.0 — 2026-11-10
 - **Ventana de Ajustes** (menú → Ajustes…, ⌘,): cambiar el atajo de pegado, el tiempo de auto-ocultado (5 s a nunca), dónde aparece la estantería y la sensibilidad del «sacudir».
 - **Inglés además de español**: la app sigue el idioma del sistema.
