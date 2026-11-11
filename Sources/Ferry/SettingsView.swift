@@ -103,9 +103,11 @@ struct SettingsView: View {
                 Text("Cuanto más alta, menos hace falta sacudir el ratón mientras arrastras.")
                     .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Sacudir para abrir") }
+
+            LicenseSettingsSection()
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 400)
+        .frame(width: 460, height: 540)
         .onDisappear { rec.stop() }
     }
 }

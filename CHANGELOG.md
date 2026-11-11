@@ -3,6 +3,13 @@
 Versión actual: ver el archivo `VERSION`. Para publicar una nueva, cambia `VERSION`
 y ejecuta `./make-dmg.sh`.
 
+## 1.5.0 — 2026-11-11 · Periodo de prueba (tester)
+- **Ferry pasa a un periodo de prueba hasta el 9 de febrero de 2027.** Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.
+- Aviso de bienvenida la primera vez, aviso discreto con los días que quedan (menú de la barra de menú, pie de la estantería y Ajustes) y, en los últimos 14 días, un recordatorio una vez al día.
+- **Activación con clave**: nueva sección «Licencia» en Ajustes y ítems «Obtener premium…» / «Introducir clave…» en el menú. La clave se verifica sin internet; Ferry sigue sin usar la red (solo abre la página de compra en tu navegador).
+- Cuando la prueba termina, Ferry deja de aceptar y entregar archivos y muestra la ventana de activación (al sacudir el cursor, como mucho una vez cada pocos minutos). Lo que ya estaba en la estantería se conserva intacto y nunca se borra ni se mueve nada por la expiración.
+- Retrasar el reloj del Mac no reactiva la prueba.
+
 ## 1.4.1 — 2026-11-11 · Seguridad
 - **El enlace `ferry://bring` ya no actúa sin preguntar.** Valida la ruta (debe ser una carpeta existente y escribible; se rechazan `~/Library`, carpetas del sistema y carpetas ocultas), muestra siempre una confirmación con la ruta completa y solo **copia**: nunca mueve los originales cuando la orden viene de un enlace. Un enlace de una web ya no puede mandar tus archivos a donde quiera. La Acción rápida «Traer de Ferry» sigue funcionando y ahora pasa por esa confirmación.
 - El historial de «Cortados» se valida antes de borrar o mover algo: un `estado.json` alterado ya no puede hacer que Ferry toque archivos fuera de su carpeta.

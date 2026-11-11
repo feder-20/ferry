@@ -18,6 +18,7 @@ final class DropContainerView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard TrialManager.shared.allowsFeatures else { return [] } // prueba vencida: no acepta soltados
         model.isTargeted = true
         return .copy
     }
@@ -26,6 +27,7 @@ final class DropContainerView: NSView {
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         model.isTargeted = false
+        guard TrialManager.shared.allowsFeatures else { return false }
         let pb = sender.draggingPasteboard
 
         // 1) Archivos reales: se guarda la ruta, el nombre no cambia.

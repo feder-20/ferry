@@ -9,6 +9,7 @@ final class Paster {
     init(model: ShelfModel) { self.model = model }
 
     func pasteAll() {
+        guard TrialManager.shared.allowsFeatures else { return } // prueba vencida: no entrega nada
         let chosen = model.selected.isEmpty ? model.items : model.items.filter { model.selected.contains($0.id) }
         guard !chosen.isEmpty else { NSSound.beep(); return }
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.apple.finder" {
@@ -34,6 +35,7 @@ final class Paster {
     /// Siempre SOLO COPIA: la orden llega de una URL (`ferry://`) y nunca debe mover originales.
     /// La carpeta debe venir ya validada (`PathSafety.validateBringPath`) y confirmada por el usuario.
     func bring(into folder: URL) {
+        guard TrialManager.shared.allowsFeatures else { return }
         let chosen = bringCandidates
         guard !chosen.isEmpty else {
             model.alert(L("La estantería está vacía"), L("No hay nada que traer a %@.", folder.lastPathComponent))

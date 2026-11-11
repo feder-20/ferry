@@ -106,3 +106,33 @@
 "Se copiarán los elementos a esa carpeta. Los originales no se moverán. Si no has pedido esto tú, cancela." = "The items will be copied to that folder. The originals won’t be moved. If you didn’t ask for this, cancel.";
 "Cancelar" = "Cancel";
 "Traer" = "Bring";
+
+/* Periodo de prueba y licencia */
+"Obtener premium…" = "Get premium…";
+"Obtener premium" = "Get premium";
+"Introducir clave…" = "Enter key…";
+"Introducir clave" = "Enter key";
+"Versión de prueba · quedan %lld días · Premium: %@" = "Trial version · %lld days left · Premium: %@";
+"Último día de prueba · Premium: %@" = "Last day of the trial · Premium: %@";
+"Quedan %lld días de prueba · Premium: %@" = "%lld days of trial left · Premium: %@";
+"El periodo de prueba terminó · Premium: %@" = "The trial period has ended · Premium: %@";
+"Estás usando una versión de prueba (tester)" = "You’re using a trial (tester) version";
+"Hoy es el último día de prueba" = "Today is the last day of the trial";
+"Quedan %lld días de prueba" = "%lld days of trial left";
+"Ferry está en periodo de prueba hasta el %@. Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden." = "Ferry is in a trial period until %@. It’s free during this period and you’re helping us improve it. After that, each app will cost 10 USD (one-time payment). Your files are never touched or lost.";
+"Entendido" = "Got it";
+"Más información / Obtener premium" = "More info / Get premium";
+"El periodo de prueba terminó" = "The trial period has ended";
+"Gracias por probar Ferry. Para seguir usándola, obtén la versión premium (%@, pago único)." = "Thanks for trying Ferry. To keep using it, get the premium version (%@, one-time payment).";
+"Tus archivos de la estantería se conservan y no se tocan." = "The files on your shelf are kept and never touched.";
+"Premium: %@ por app, pago único" = "Premium: %@ per app, one-time payment";
+"Tengo una clave" = "I have a key";
+"Activar" = "Activate";
+"Cerrar" = "Close";
+"La clave no es válida. Revisa que esté completa." = "The key isn’t valid. Check that it’s complete.";
+"Esa clave es de otra app, no de Ferry." = "That key is for a different app, not Ferry.";
+"Esa clave ya está activada." = "That key is already activated.";
+"Premium activado · %@" = "Premium activated · %@";
+"Quitar licencia" = "Remove license";
+"La prueba termina el %@." = "The trial ends on %@.";
+"Licencia" = "License";

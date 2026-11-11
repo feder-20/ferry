@@ -11,12 +11,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKey: HotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        TrialManager.shared.openURL = { NSWorkspace.shared.open($0) }
         shelf.model.cleanTemp() // restos de ejecuciones anteriores (cierres bruscos)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "ferry.fill",
                                            accessibilityDescription: "Ferry")
 
         menu = NSMenu()
+        let status = menu.addItem(withTitle: "", action: nil, keyEquivalent: "")
+        status.tag = 20; status.isEnabled = false
+        let buy = menu.addItem(withTitle: L("Obtener premium…"), action: #selector(openPurchase), keyEquivalent: "")
+        buy.target = self; buy.tag = 21
+        let enterKey = menu.addItem(withTitle: L("Introducir clave…"), action: #selector(showActivation), keyEquivalent: "")
+        enterKey.target = self; enterKey.tag = 22
+        menu.addItem(.separator())
         menu.addItem(withTitle: L("Acerca de Ferry"), action: #selector(showAbout), keyEquivalent: "")
             .target = self
         menu.addItem(.separator())
@@ -56,12 +64,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
 
         // Al sacudir el mouse mientras arrastras algo, aparece la estantería.
-        monitor.onShake = { [weak self] in self?.shelf.show(nearMouse: true) }
+        monitor.onShake = { [weak self] in self?.handleShake() }
         monitor.start()
 
         // Atajo global (por defecto ⌃⌥⌘V): pega la estantería en la app o carpeta activa.
         // (⌥⌘V ya lo usa el Finder para "Mover aquí", por eso se añade ⌃.)
         registerHotKey()
+        // Avisos de la prueba (bienvenida una vez, recordatorio diario, vencida), con la app ya arrancada.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { TrialUI.showLaunchNotice() }
         NotificationCenter.default.addObserver(forName: Prefs.changed, object: nil, queue: .main) { [weak self] _ in
             self?.registerHotKey()
         }
@@ -111,15 +121,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.item(withTag: 6)?.state = ImageConverter.askOnDrop ? .on : .off
             menu.item(withTag: 4)?.state = ShelfModel.rememberShelf ? .on : .off
             menu.item(withTag: 3)?.state = SMAppService.mainApp.status == .enabled ? .on : .off
+            refreshTrialItems()
             statusItem.menu = menu
             statusItem.button?.performClick(nil)
             statusItem.menu = nil
         } else if event.clickCount >= 2 {
-            shelf.toggle()
+            toggle()
         }
     }
 
-    @objc private func toggle() { shelf.toggle() }
+    /// Sacudir: con prueba vencida no abre la estantería; abre la activación como mucho cada pocos minutos.
+    private func handleShake() {
+        if TrialManager.shared.allowsFeatures { shelf.show(nearMouse: true) }
+        else if TrialManager.shared.shouldNudgeActivation() { ActivationWindow.shared.show(expired: true) }
+    }
+
+    private func refreshTrialItems() {
+        let t = TrialManager.shared
+        if let info = t.license {
+            menu.item(withTag: 20)?.title = L("Premium activado · %@", info.name)
+            menu.item(withTag: 21)?.isHidden = true
+            menu.item(withTag: 22)?.isHidden = true
+        } else {
+            menu.item(withTag: 20)?.title = t.statusLine ?? ""
+            menu.item(withTag: 21)?.isHidden = false
+            menu.item(withTag: 22)?.isHidden = false
+        }
+    }
+
+    @objc private func openPurchase() { TrialManager.shared.openPurchase() }
+    @objc private func showActivation() {
+        ActivationWindow.shared.show(expired: TrialManager.shared.state == .expired)
+    }
+
+    @objc private func toggle() {
+        guard TrialManager.shared.allowsFeatures else { showActivation(); return }
+        shelf.toggle()
+    }
     @objc private func toggleLogin() {
         let svc = SMAppService.mainApp
         do {
@@ -213,6 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         // Solo la primera orden válida; el resto se ignora (antiabuso).
+        guard TrialManager.shared.allowsFeatures else { showActivation(); return }
         guard let path = urls.lazy.compactMap({ PathSafety.bringPath(from: $0) }).first else { return }
         // Un momento para que la app termine de arrancar si la acción la lanzó.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
@@ -262,7 +301,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ShelfModel.rememberShelf.toggle()
         shelf.model.save()
     }
-    @objc private func showHistory() { shelf.showHistory() }
+    @objc private func showHistory() {
+        guard TrialManager.shared.allowsFeatures else { showActivation(); return }
+        shelf.showHistory()
+    }
     @objc private func pasteNow() {
         // Deja que el menú se cierre y que la app activa recupere el foco.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in self?.paster.pasteAll() }

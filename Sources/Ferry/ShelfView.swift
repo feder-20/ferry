@@ -32,6 +32,7 @@ struct ShelfView: View {
                     }
                 }
             }
+            TrialFooter()
         }
         .padding(12)
         .frame(width: ShelfMetrics.width, height: ShelfMetrics.height)
@@ -197,6 +198,7 @@ final class DragSourceView: NSView, NSDraggingSource {
     override func mouseDragged(with event: NSEvent) {
         guard let model, let item, let down = downEvent else { return }
         downEvent = nil
+        guard TrialManager.shared.allowsFeatures else { return } // vencida: no se entrega nada
         group = model.dragItems(for: item)
         ImageConverter.dragChoice = nil
         let imageCount = group.filter { if case .file(let u) = $0.content { return u.isImageFile } else { return false } }.count

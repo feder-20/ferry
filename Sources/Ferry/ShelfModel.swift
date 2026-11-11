@@ -215,12 +215,16 @@ final class ShelfModel: ObservableObject {
     // MARK: Elementos
     /// Añade evitando duplicados (mismo archivo / enlace / texto).
     func add(_ content: ShelfContent) {
+        guard TrialManager.shared.allowsFeatures else { return } // vencida: no se añade nada (lo guardado se conserva)
         let item = ShelfItem(content: content)
         if items.contains(where: { $0.key == item.key }) { return }
         items.append(item)
     }
 
-    func removeAll() { items.removeAll(); selected.removeAll() }
+    func removeAll() {
+        guard TrialManager.shared.allowsFeatures else { return }
+        items.removeAll(); selected.removeAll()
+    }
     func remove(_ item: ShelfItem) { removeItems([item.id]) }
     func removeItems(_ ids: Set<UUID>) {
         items.removeAll { ids.contains($0.id) }
@@ -295,6 +299,7 @@ final class ShelfModel: ObservableObject {
 
     /// "Devolver al origen": regresa el archivo cortado a su carpeta original.
     func restore(_ record: CutRecord) {
+        guard TrialManager.shared.allowsFeatures else { return }
         let fm = FileManager.default
         let stash = URL(fileURLWithPath: record.stashPath)
         guard Self.isValidStashEntry(record.stashPath),
