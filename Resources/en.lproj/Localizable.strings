@@ -97,3 +97,12 @@
 "Alta" = "High";
 "Cuanto más alta, menos hace falta sacudir el ratón mientras arrastras." = "The higher it is, the less you need to shake the mouse while dragging.";
 "Cortes recientes (devolver al origen)" = "Recent cuts (return to origin)";
+
+/* Traer desde ferry:// */
+"No se puede traer a esa carpeta" = "Can’t bring items to that folder";
+"Ferry no entrega archivos en carpetas del sistema, de biblioteca u ocultas." = "Ferry doesn’t deliver files to system, Library or hidden folders.";
+"La ruta no es una carpeta existente y con permiso de escritura." = "The path isn’t an existing, writable folder.";
+"¿Traer %lld elementos a «%@»?" = "Bring %lld items to “%@”?";
+"Se copiarán los elementos a esa carpeta. Los originales no se moverán. Si no has pedido esto tú, cancela." = "The items will be copied to that folder. The originals won’t be moved. If you didn’t ask for this, cancel.";
+"Cancelar" = "Cancel";
+"Traer" = "Bring";

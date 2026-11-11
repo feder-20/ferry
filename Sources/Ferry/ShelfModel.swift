@@ -139,9 +139,30 @@ final class ShelfModel: ObservableObject {
     static let stashDays = 7.0
 
     init() {
+        Self.ensureSupportDirs()
         load()
         purgeOldStash()
         isLoading = false
+    }
+
+    private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
+
+    /// Carpeta de datos privada (0700).
+    static func ensureSupportDirs() {
+        let fm = FileManager.default
+        for dir in [supportDir, stashDir] {
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true,
+                                    attributes: [.posixPermissions: 0o700])
+            try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
+        }
+    }
+
+    /// ¿Está `url` dentro de la carpeta de cortados de Ferry (resolviendo symlinks)?
+    static func isInStash(_ url: URL) -> Bool {
+        PathSafety.isInside(url.path, base: stashDir.path)
+    }
+    static func isValidStashEntry(_ path: String) -> Bool {
+        PathSafety.isValidStashEntry(path, stashDir: stashDir.path)
     }
 
     // MARK: Persistencia
@@ -149,15 +170,26 @@ final class ShelfModel: ObservableObject {
         guard let data = try? Data(contentsOf: Self.stateURL),
               let state = try? JSONDecoder().decode(PersistedState.self, from: data) else { return }
         items = state.items.compactMap { ShelfItem(stored: $0) }
-        history = state.history.filter { FileManager.default.fileExists(atPath: $0.stashPath) }
+        history = state.history.compactMap { Self.sanitized($0) }
+    }
+
+    /// estado.json puede haber sido editado: descarta o corrige entradas con rutas fuera de lugar.
+    static func sanitized(_ r: CutRecord) -> CutRecord? {
+        guard isValidStashEntry(r.stashPath), FileManager.default.fileExists(atPath: r.stashPath),
+              PathSafety.isValidOriginal(r.originalPath, name: r.name, home: home) else { return nil }
+        var r = r
+        if let d = r.destinationPath,
+           !PathSafety.isPlausibleDestination(d, name: r.name, home: home) { r.destinationPath = nil }
+        return r
     }
 
     func save() {
         guard !isLoading else { return }
         let state = PersistedState(items: Self.rememberShelf ? items.map(\.stored) : [], history: history)
-        try? FileManager.default.createDirectory(at: Self.supportDir, withIntermediateDirectories: true)
+        Self.ensureSupportDirs()
         if let data = try? JSONEncoder().encode(state) {
             try? data.write(to: Self.stateURL, options: .atomic)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: Self.stateURL.path)
         }
     }
 
@@ -210,9 +242,10 @@ final class ShelfModel: ObservableObject {
 
     // MARK: Cortar
     /// Termina un traslado: saca los elementos de la estantería y, en modo cortar, aparta los originales.
-    func finishCut(_ done: [ShelfItem], destinations: [UUID: URL] = [:], immediate: Bool = false) {
+    func finishCut(_ done: [ShelfItem], destinations: [UUID: URL] = [:], immediate: Bool = false,
+                   origin: DeliveryOrigin = .user) {
         removeItems(Set(done.map(\.id)))
-        guard Self.moveMode else { return }
+        guard DeliveryPolicy.shouldCut(moveMode: Self.moveMode, origin: origin) else { return }
         for item in done {
             guard case .file(let url) = item.content else { continue }
             if immediate { cutOriginal(url, destination: destinations[item.id]) }
@@ -245,14 +278,14 @@ final class ShelfModel: ObservableObject {
         let sub = Self.stashDir.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let target = sub.appendingPathComponent(url.lastPathComponent)
         do {
-            try fm.createDirectory(at: sub, withIntermediateDirectories: true)
+            try fm.createDirectory(at: sub, withIntermediateDirectories: true,
+                                   attributes: [.posixPermissions: 0o700])
             try fm.moveItem(at: url, to: target)
             history.insert(CutRecord(name: url.lastPathComponent, originalPath: url.path,
                                      stashPath: target.path, destinationPath: destination?.path,
                                      date: Date()), at: 0)
             while history.count > 50 {
-                let old = history.removeLast()
-                try? fm.removeItem(at: URL(fileURLWithPath: old.stashPath).deletingLastPathComponent())
+                removeStash(of: history.removeLast())
             }
         } catch {
             alert(L("No se pudo cortar el original"),
@@ -264,6 +297,11 @@ final class ShelfModel: ObservableObject {
     func restore(_ record: CutRecord) {
         let fm = FileManager.default
         let stash = URL(fileURLWithPath: record.stashPath)
+        guard Self.isValidStashEntry(record.stashPath),
+              PathSafety.isValidOriginal(record.originalPath, name: record.name, home: Self.home) else {
+            history.removeAll { $0.id == record.id }
+            return
+        }
         guard fm.fileExists(atPath: stash.path) else {
             history.removeAll { $0.id == record.id }
             alert(L("No se encontró el archivo"), L("%@ ya no está en la carpeta de cortados de Ferry.", record.name))
@@ -274,9 +312,10 @@ final class ShelfModel: ObservableObject {
         do {
             try fm.createDirectory(at: original.deletingLastPathComponent(), withIntermediateDirectories: true)
             try fm.moveItem(at: stash, to: target)
-            try? fm.removeItem(at: stash.deletingLastPathComponent())
+            removeStash(of: record)
             // Si Ferry había pegado una copia en el destino, se retira a la Papelera.
-            if let d = record.destinationPath, fm.fileExists(atPath: d) {
+            if let d = record.destinationPath, fm.fileExists(atPath: d),
+               PathSafety.isPlausibleDestination(d, name: record.name, home: Self.home) {
                 try? fm.trashItem(at: URL(fileURLWithPath: d), resultingItemURL: nil)
             }
             history.removeAll { $0.id == record.id }
@@ -288,8 +327,15 @@ final class ShelfModel: ObservableObject {
     private func purgeOldStash() {
         let limit = Date().addingTimeInterval(-Self.stashDays * 86_400)
         let old = history.filter { $0.date < limit }
-        for r in old { try? FileManager.default.removeItem(at: URL(fileURLWithPath: r.stashPath).deletingLastPathComponent()) }
+        for r in old { removeStash(of: r) }
         if !old.isEmpty { history.removeAll { $0.date < limit } }
+    }
+
+    /// Borra la carpeta `Cortados/<uuid>` de un registro, solo si de verdad está dentro del stash.
+    private func removeStash(of record: CutRecord) {
+        guard Self.isValidStashEntry(record.stashPath) else { return }
+        try? FileManager.default.removeItem(
+            at: URL(fileURLWithPath: record.stashPath).deletingLastPathComponent())
     }
 
     // MARK: Utilidades

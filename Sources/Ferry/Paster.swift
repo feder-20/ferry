@@ -26,16 +26,23 @@ final class Paster {
     }
 
     /// "Traer de Ferry" (Acción rápida del Finder): trae la estantería a la carpeta indicada.
+    /// Elementos que se traerían ahora mismo (selección, o toda la estantería).
+    var bringCandidates: [ShelfItem] {
+        model.selected.isEmpty ? model.items : model.items.filter { model.selected.contains($0.id) }
+    }
+
+    /// Siempre SOLO COPIA: la orden llega de una URL (`ferry://`) y nunca debe mover originales.
+    /// La carpeta debe venir ya validada (`PathSafety.validateBringPath`) y confirmada por el usuario.
     func bring(into folder: URL) {
-        let chosen = model.selected.isEmpty ? model.items : model.items.filter { model.selected.contains($0.id) }
+        let chosen = bringCandidates
         guard !chosen.isEmpty else {
             model.alert(L("La estantería está vacía"), L("No hay nada que traer a %@.", folder.lastPathComponent))
             return
         }
-        copy(chosen, into: folder)
+        copy(chosen, into: folder, origin: .url)
     }
 
-    private func copy(_ chosen: [ShelfItem], into folder: URL) {
+    private func copy(_ chosen: [ShelfItem], into folder: URL, origin: DeliveryOrigin = .user) {
         DispatchQueue.global(qos: .userInitiated).async { [model] in
             let fm = FileManager.default
             var done: [ShelfItem] = []
@@ -64,7 +71,7 @@ final class Paster {
             }
             DispatchQueue.main.async {
                 // La copia ya está hecha: el corte del original es inmediato.
-                model.finishCut(done, destinations: destinations, immediate: true)
+                model.finishCut(done, destinations: destinations, immediate: true, origin: origin)
                 if !failures.isEmpty {
                     model.alert(L("No se pudo pegar todo"), failures.joined(separator: "\n"))
                 }
@@ -105,9 +112,10 @@ final class Paster {
 
     private func viaKeyboard(_ chosen: [ShelfItem]) {
         let pb = NSPasteboard.general
-        let saved: [[(NSPasteboard.PasteboardType, Data)]] = (pb.pasteboardItems ?? []).map { item in
-            item.types.compactMap { t in item.data(forType: t).map { (t, $0) } }
-        }
+        // Respaldo sin elementos «concealed» (contraseñas de gestores).
+        let saved: [[(NSPasteboard.PasteboardType, Data)]] = (pb.pasteboardItems ?? [])
+            .filter { PasteboardPolicy.isRestorable(types: $0.types.map(\.rawValue)) }
+            .map { item in item.types.compactMap { t in item.data(forType: t).map { (t, $0) } } }
 
         let files: [NSURL] = chosen.compactMap { if case .file(let u) = $0.content { return u as NSURL } else { return nil } }
         pb.clearContents()
@@ -123,6 +131,11 @@ final class Paster {
             }.joined(separator: "\n")
             pb.setString(text, forType: .string)
         }
+        // Marca transitoria: los gestores de portapapeles no deben guardarlo en su historial.
+        let transient = NSPasteboard.PasteboardType(PasteboardPolicy.transientType)
+        pb.addTypes([transient], owner: nil)
+        pb.setData(Data(), forType: transient)
+        let ourChange = pb.changeCount
 
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         guard AXIsProcessTrustedWithOptions(options) else {
@@ -136,6 +149,9 @@ final class Paster {
             self?.model.finishCut(chosen)
             // Devolver el portapapeles anterior cuando la app ya pegó.
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                // Si el usuario (u otra app) copió algo mientras tanto, no se pisa.
+                guard PasteboardPolicy.shouldRestore(currentChangeCount: pb.changeCount,
+                                                     ourChangeCount: ourChange) else { return }
                 pb.clearContents()
                 let restored = saved.map { arr -> NSPasteboardItem in
                     let i = NSPasteboardItem()

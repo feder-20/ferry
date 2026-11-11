@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKey: HotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        shelf.model.cleanTemp() // restos de ejecuciones anteriores (cierres bruscos)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "ferry.fill",
                                            accessibilityDescription: "Ferry")
@@ -206,15 +207,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// ferry://bring?path=/ruta/de/la/carpeta  (lo lanza la Acción rápida)
+    /// Cualquier web o app puede lanzar esta URL: se valida la ruta, se pide confirmación SIEMPRE
+    /// y la entrega es solo copia (nunca corta originales).
+    private var bringDialogOpen = false
+
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == "ferry" && url.host == "bring" {
-            guard let path = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                .queryItems?.first(where: { $0.name == "path" })?.value, !path.isEmpty else { continue }
-            // Un momento para que la app termine de arrancar si la acción la lanzó.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.paster.bring(into: URL(fileURLWithPath: path, isDirectory: true))
-            }
+        // Solo la primera orden válida; el resto se ignora (antiabuso).
+        guard let path = urls.lazy.compactMap({ PathSafety.bringPath(from: $0) }).first else { return }
+        // Un momento para que la app termine de arrancar si la acción la lanzó.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.confirmAndBring(path: path)
         }
+    }
+
+    private func confirmAndBring(path: String) {
+        guard !bringDialogOpen else { return } // ya hay un diálogo abierto: se ignora
+        bringDialogOpen = true
+        defer { bringDialogOpen = false }
+        NSApp.activate(ignoringOtherApps: true)
+
+        let folder: URL
+        switch PathSafety.validateBringPath(path) {
+        case .failure(let err):
+            let a = NSAlert()
+            a.alertStyle = .warning
+            a.messageText = L("No se puede traer a esa carpeta")
+            switch err {
+            case .forbidden: a.informativeText = L("Ferry no entrega archivos en carpetas del sistema, de biblioteca u ocultas.")
+            default: a.informativeText = L("La ruta no es una carpeta existente y con permiso de escritura.")
+            }
+            a.runModal()
+            return
+        case .success(let url): folder = url
+        }
+
+        let count = paster.bringCandidates.count
+        guard count > 0 else {
+            shelf.model.alert(L("La estantería está vacía"), L("No hay nada que traer a %@.", folder.lastPathComponent))
+            return
+        }
+        let a = NSAlert()
+        a.alertStyle = .warning
+        a.messageText = L("¿Traer %lld elementos a «%@»?", Int64(count), folder.path)
+        a.informativeText = L("Se copiarán los elementos a esa carpeta. Los originales no se moverán. Si no has pedido esto tú, cancela.")
+        let cancel = a.addButton(withTitle: L("Cancelar")) // botón por defecto: Intro cancela
+        cancel.keyEquivalent = "\r"
+        a.addButton(withTitle: L("Traer")).keyEquivalent = ""
+        guard a.runModal() == .alertSecondButtonReturn else { return }
+        paster.bring(into: folder)
     }
 
     @objc private func toggleAskImages() { ImageConverter.askOnDrop.toggle() }
