@@ -20,7 +20,7 @@ enum TrialUI {
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
         a.messageText = title
-        a.informativeText = L("Ferry está en periodo de prueba hasta el %@. Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", trial.endDateText)
+        a.informativeText = L("Ferry está en periodo de prueba: úsala gratis durante 90 días (hasta el %@) y ayúdanos a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", trial.endDateText)
         a.addButton(withTitle: L("Entendido"))
         a.addButton(withTitle: L("Más información / Obtener premium"))
         if reminder { a.addButton(withTitle: L("Introducir clave…")) }
@@ -143,7 +143,7 @@ struct LicenseSettingsSection: View {
                     NotificationCenter.default.post(name: Prefs.changed, object: nil) }
             } else {
                 Text(trial.statusLine ?? "")
-                Text(L("La prueba termina el %@.", trial.endDateText)).font(.caption).foregroundStyle(.secondary)
+                Text(L("Tu prueba de 90 días dura hasta el %@.", trial.endDateText)).font(.caption).foregroundStyle(.secondary)
                 HStack {
                     Button("Obtener premium") { trial.openPurchase() }
                     Button("Introducir clave…") { ActivationWindow.shared.show(expired: false) }

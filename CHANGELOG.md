@@ -3,6 +3,12 @@
 Versión actual: ver el archivo `VERSION`. Para publicar una nueva, cambia `VERSION`
 y ejecuta `./make-dmg.sh`.
 
+## 1.5.1 — 2026-11-13 · Prueba de 90 días por persona
+- **La prueba ahora dura 90 días por persona, contados desde la primera vez que abres Ferry**, en lugar de la fecha fija del 9 de febrero de 2027 de la 1.5.0. Cada quien ve su propia fecha de fin en el aviso de bienvenida, el pie de la estantería, el menú y Ajustes («quedan N días de 90»).
+- **Si ya usabas la 1.5.0**, recibes los 90 días completos a partir del momento en que actualizas a esta versión.
+- El inicio de la prueba se guarda en dos lugares (preferencias y un archivo en tu carpeta de datos de Ferry) y se usa el más antiguo. Es un freno razonable, no un DRM. Retrasar el reloj sigue sin reactivar la prueba.
+- Después de los 90 días, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden. Ferry sigue sin usar internet.
+
 ## 1.5.0 — 2026-11-11 · Periodo de prueba (tester)
 - **Ferry pasa a un periodo de prueba hasta el 9 de febrero de 2027.** Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.
 - Aviso de bienvenida la primera vez, aviso discreto con los días que quedan (menú de la barra de menú, pie de la estantería y Ajustes) y, en los últimos 14 días, un recordatorio una vez al día.

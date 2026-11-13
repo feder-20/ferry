@@ -112,14 +112,14 @@
 "Obtener premium" = "Get premium";
 "Introducir clave…" = "Enter key…";
 "Introducir clave" = "Enter key";
-"Versión de prueba · quedan %lld días · Premium: %@" = "Trial version · %lld days left · Premium: %@";
+"Versión de prueba · quedan %lld días de 90 · Premium: %@" = "Trial version · %lld of 90 days left · Premium: %@";
 "Último día de prueba · Premium: %@" = "Last day of the trial · Premium: %@";
 "Quedan %lld días de prueba · Premium: %@" = "%lld days of trial left · Premium: %@";
 "El periodo de prueba terminó · Premium: %@" = "The trial period has ended · Premium: %@";
 "Estás usando una versión de prueba (tester)" = "You’re using a trial (tester) version";
 "Hoy es el último día de prueba" = "Today is the last day of the trial";
 "Quedan %lld días de prueba" = "%lld days of trial left";
-"Ferry está en periodo de prueba hasta el %@. Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden." = "Ferry is in a trial period until %@. It’s free during this period and you’re helping us improve it. After that, each app will cost 10 USD (one-time payment). Your files are never touched or lost.";
+"Ferry está en periodo de prueba: úsala gratis durante 90 días (hasta el %@) y ayúdanos a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden." = "Ferry is in a trial period: use it free for 90 days (until %@) and help us improve it. After that, each app will cost 10 USD (one-time payment). Your files are never touched or lost.";
 "Entendido" = "Got it";
 "Más información / Obtener premium" = "More info / Get premium";
 "El periodo de prueba terminó" = "The trial period has ended";
@@ -134,5 +134,5 @@
 "Esa clave ya está activada." = "That key is already activated.";
 "Premium activado · %@" = "Premium activated · %@";
 "Quitar licencia" = "Remove license";
-"La prueba termina el %@." = "The trial ends on %@.";
+"Tu prueba de 90 días dura hasta el %@." = "Your 90-day trial lasts until %@.";
 "Licencia" = "License";

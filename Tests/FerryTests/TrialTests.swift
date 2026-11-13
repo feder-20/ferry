@@ -10,93 +10,188 @@ final class TrialTests: XCTestCase {
         let c = c ?? cal()
         return c.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: mi, second: s))!
     }
-    func st(_ now: Date, seen: Date? = nil, lic: Bool = false, c: Calendar? = nil) -> TrialState {
-        TrialPolicy.state(now: now, lastSeen: seen, licensed: lic, calendar: c ?? cal())
+    /// Día de calendario D0 + n a la hora indicada.
+    func day(_ d0: Date, _ n: Int, _ h: Int = 12, _ mi: Int = 0, _ s: Int = 0, c: Calendar? = nil) -> Date {
+        let c = c ?? cal()
+        let base = c.date(byAdding: .day, value: n, to: c.startOfDay(for: d0))!
+        return c.date(bySettingHour: h, minute: mi, second: s, of: base)!
+    }
+    var first: Date { date(2026, 11, 13, 15) }
+    func st(_ now: Date, first f: Date? = nil, seen: Date? = nil, lic: Bool = false, c: Calendar? = nil) -> TrialState {
+        TrialPolicy.state(now: now, firstLaunch: f ?? first, lastSeen: seen, licensed: lic, calendar: c ?? cal())
     }
 
     // MARK: TrialPolicy
     func testStatesAndBoundaries() {
-        XCTAssertEqual(st(date(2026, 11, 11)), .trial(daysLeft: 91))
-        XCTAssertEqual(st(date(2027, 1, 26)), .trial(daysLeft: 15))
-        XCTAssertEqual(st(date(2027, 1, 27)), .lastDays(daysLeft: 14))
-        XCTAssertEqual(st(date(2027, 2, 8)), .lastDays(daysLeft: 2))
-        XCTAssertEqual(st(date(2027, 2, 9, 0, 0, 0)), .lastDays(daysLeft: 1))
-        XCTAssertEqual(st(date(2027, 2, 9, 23, 59, 59)), .lastDays(daysLeft: 1))
-        XCTAssertEqual(st(date(2027, 2, 10, 0, 0, 0)), .expired)
-        XCTAssertEqual(st(date(2028, 1, 1)), .expired)
+        XCTAssertEqual(TrialConfig.trialDays, 90)
+        XCTAssertEqual(st(first), .trial(daysLeft: 90)) // día 1 = 90
+        XCTAssertEqual(st(day(first, 0, 0, 0, 0)), .trial(daysLeft: 90))
+        XCTAssertEqual(st(day(first, 1)), .trial(daysLeft: 89))
+        XCTAssertEqual(st(day(first, 75)), .trial(daysLeft: 15))
+        XCTAssertEqual(st(day(first, 76)), .lastDays(daysLeft: 14))
+        XCTAssertEqual(st(day(first, 88)), .lastDays(daysLeft: 2))
+        XCTAssertEqual(st(day(first, 89, 0, 0, 0)), .lastDays(daysLeft: 1)) // último día
+        XCTAssertEqual(st(day(first, 89, 23, 59, 59)), .lastDays(daysLeft: 1))
+        XCTAssertEqual(st(day(first, 90, 0, 0, 0)), .expired) // día 91
+        XCTAssertEqual(st(day(first, 400)), .expired)
+    }
+    func testEndDateIsLastIncludedDay() {
+        let c = cal()
+        let end = TrialPolicy.endDate(firstLaunch: first, calendar: c)
+        XCTAssertEqual(c.dateComponents([.year, .month, .day], from: end), DateComponents(year: 2027, month: 2, day: 10))
+        let cut = TrialPolicy.trialEndDay(firstLaunch: first, calendar: c)
+        XCTAssertEqual(c.dateComponents([.year, .month, .day, .hour], from: cut), DateComponents(year: 2027, month: 2, day: 11, hour: 0))
     }
     func testClockBackwardsDoesNotRevive() {
-        XCTAssertEqual(st(date(2026, 12, 1), seen: date(2027, 2, 12)), .expired)
-        XCTAssertEqual(st(date(2026, 12, 1), seen: date(2026, 11, 1)), .trial(daysLeft: 71))
+        XCTAssertEqual(st(day(first, 10), seen: day(first, 95)), .expired)
+        XCTAssertEqual(st(day(first, 10), seen: day(first, 20)), .trial(daysLeft: 70))
+    }
+    func testFirstLaunchInTheFutureIsClamped() {
+        let now = date(2026, 12, 1)
+        XCTAssertEqual(st(now, first: date(2027, 12, 1)), .trial(daysLeft: 90)) // no da más de 90 días
+        XCTAssertEqual(st(now, first: day(now, 1)), .trial(daysLeft: 90))
     }
     func testLicensedWinsOverExpired() {
-        XCTAssertEqual(st(date(2030, 1, 1), lic: true), .licensed)
-        XCTAssertEqual(st(date(2026, 11, 11), lic: true), .licensed)
+        XCTAssertEqual(st(day(first, 2000), lic: true), .licensed)
+        XCTAssertEqual(st(first, lic: true), .licensed)
     }
     func testTimeZonesAndDST() {
         for tz in ["America/Bogota", "Europe/Madrid", "America/New_York", "Pacific/Auckland", "Asia/Tokyo"] {
-            let c = cal(tz)
-            XCTAssertEqual(st(date(2027, 2, 9, 23, 59, 59, c: c), c: c), .lastDays(daysLeft: 1), tz)
-            XCTAssertEqual(st(date(2027, 2, 10, 0, 0, 0, c: c), c: c), .expired, tz)
-            XCTAssertEqual(st(date(2027, 1, 27, 0, 0, 1, c: c), c: c), .lastDays(daysLeft: 14), tz)
-            XCTAssertEqual(st(date(2027, 1, 26, 23, 59, 59, c: c), c: c), .trial(daysLeft: 15), tz)
+            let c = cal(tz); let f = date(2026, 11, 13, 15, c: c)
+            XCTAssertEqual(st(day(f, 89, 23, 59, 59, c: c), first: f, c: c), .lastDays(daysLeft: 1), tz)
+            XCTAssertEqual(st(day(f, 90, 0, 0, 0, c: c), first: f, c: c), .expired, tz)
+            XCTAssertEqual(st(day(f, 76, 0, 0, 1, c: c), first: f, c: c), .lastDays(daysLeft: 14), tz)
+            XCTAssertEqual(st(day(f, 75, 23, 59, 59, c: c), first: f, c: c), .trial(daysLeft: 15), tz)
         }
-        // Cruce de DST (EE. UU. 14 mar 2027, Europa 28 mar 2027): días de calendario, sin ±1.
-        let ny = cal("America/New_York")
-        XCTAssertEqual(st(date(2027, 3, 1, c: ny), c: ny), .expired)
-        let mad = cal("Europe/Madrid")
-        XCTAssertEqual(st(date(2026, 10, 24, 12, c: mad), c: mad), .trial(daysLeft: 109)) // antes del cambio de hora (25 oct)
-        XCTAssertEqual(st(date(2026, 10, 26, 12, c: mad), c: mad), .trial(daysLeft: 107))
+        // Cruce de DST dentro de la prueba: días de calendario, sin ±1.
+        let ny = cal("America/New_York"), nyF = date(2027, 3, 1, 23, 30, c: ny) // cambio de hora el 14 mar
+        XCTAssertEqual(st(date(2027, 3, 15, 0, 5, c: ny), first: nyF, c: ny), .trial(daysLeft: 76))
+        XCTAssertEqual(st(day(nyF, 89, 23, 59, c: ny), first: nyF, c: ny), .lastDays(daysLeft: 1))
+        XCTAssertEqual(st(day(nyF, 90, 0, 0, c: ny), first: nyF, c: ny), .expired)
+        let mad = cal("Europe/Madrid"), madF = date(2026, 10, 1, 8, c: mad) // cambio de hora el 25 oct
+        XCTAssertEqual(st(date(2026, 10, 24, 12, c: mad), first: madF, c: mad), .trial(daysLeft: 67))
+        XCTAssertEqual(st(date(2026, 10, 26, 12, c: mad), first: madF, c: mad), .trial(daysLeft: 65))
+        XCTAssertEqual(st(day(madF, 89, 23, 59, c: mad), first: madF, c: mad), .lastDays(daysLeft: 1))
+        XCTAssertEqual(st(day(madF, 90, 0, 0, c: mad), first: madF, c: mad), .expired)
     }
 
-    // MARK: Manager (reloj, almacén y URL inyectados)
+    // MARK: Manager (reloj y almacenes inyectados; nunca se toca el disco real)
     final class Clock { var now: Date; init(_ d: Date) { now = d } }
-    func manager(_ clock: Clock, store: MemoryStore = MemoryStore(), opened: ((URL) -> Void)? = nil) -> TrialManager {
-        TrialManager(store: store, clock: { clock.now }, calendar: cal(), openURL: opened ?? { _ in })
+    func manager(_ clock: Clock, store: MemoryStore = MemoryStore(), backup: MemoryStore = MemoryStore(),
+                 opened: ((URL) -> Void)? = nil) -> TrialManager {
+        TrialManager(store: store, backup: backup, clock: { clock.now }, calendar: cal(), openURL: opened ?? { _ in })
+    }
+    let fl = "trial.firstLaunch"
+    func ts(_ d: Date) -> String { String(d.timeIntervalSince1970) }
+    /// Manager con firstLaunch ya registrado en ambos lugares.
+    func seeded(_ clock: Clock, first f: Date? = nil) -> (TrialManager, MemoryStore, MemoryStore) {
+        let a = MemoryStore(), b = MemoryStore()
+        a.values[fl] = ts(f ?? first); b.values[fl] = ts(f ?? first)
+        return (manager(clock, store: a, backup: b), a, b)
+    }
+
+    func testFirstLaunchRecordedInBothPlacesAndStable() {
+        let clock = Clock(date(2026, 11, 13)); let a = MemoryStore(), b = MemoryStore()
+        let m = manager(clock, store: a, backup: b)
+        XCTAssertEqual(m.state, .trial(daysLeft: 90))
+        XCTAssertEqual(a.string(fl), ts(clock.now)); XCTAssertEqual(b.string(fl), ts(clock.now))
+        clock.now = day(clock.now, 30)
+        XCTAssertEqual(m.state, .trial(daysLeft: 60)) // no se reinicia
+        XCTAssertEqual(a.string(fl), ts(date(2026, 11, 13)))
+    }
+    func testFirstLaunchUsesOldestAndRecreatesMissing() {
+        let old = date(2026, 10, 1), recent = date(2026, 11, 1)
+        let clock = Clock(date(2026, 11, 13)) // 43 días desde `old`
+        // Borrar UserDefaults: se recrea desde el archivo.
+        let a = MemoryStore(), b = MemoryStore(); b.values[fl] = ts(old)
+        XCTAssertEqual(manager(clock, store: a, backup: b).state, .trial(daysLeft: 47))
+        XCTAssertEqual(a.string(fl), ts(old))
+        // Borrar el archivo: se recrea desde UserDefaults.
+        let c = MemoryStore(), d = MemoryStore(); c.values[fl] = ts(old)
+        XCTAssertEqual(manager(clock, store: c, backup: d).state, .trial(daysLeft: 47))
+        XCTAssertEqual(d.string(fl), ts(old))
+        // Dos valores distintos: gana el más antiguo y se corrige el otro.
+        let e = MemoryStore(), f = MemoryStore(); e.values[fl] = ts(recent); f.values[fl] = ts(old)
+        XCTAssertEqual(manager(clock, store: e, backup: f).state, .trial(daysLeft: 47))
+        XCTAssertEqual(e.string(fl), ts(old))
+    }
+    func testManagerFirstLaunchInTheFutureUsesNow() {
+        let clock = Clock(date(2026, 11, 13)); let a = MemoryStore(), b = MemoryStore()
+        a.values[fl] = ts(date(2030, 1, 1)); b.values[fl] = ts(date(2030, 1, 1))
+        XCTAssertEqual(manager(clock, store: a, backup: b).state, .trial(daysLeft: 90))
+        XCTAssertEqual(a.string(fl), ts(clock.now)) // se corrige el valor manipulado
+    }
+    func testMigrationFrom150StartsFullTrialAndKeepsWelcomeSeen() {
+        // Usuario de 1.5.0 (fecha fija): sin firstLaunch, con welcomeSeen y lastSeen.
+        let clock = Clock(date(2026, 11, 20)); let a = MemoryStore(), b = MemoryStore()
+        a.values["trial.welcomeSeen"] = "1"; a.values["trial.lastSeen"] = ts(date(2026, 11, 19))
+        let m = manager(clock, store: a, backup: b)
+        XCTAssertEqual(m.state, .trial(daysLeft: 90)) // 90 días completos desde actualizar
+        XCTAssertEqual(a.string(fl), ts(clock.now))
+        XCTAssertEqual(m.consumeLaunchNotice(), .none) // no repite la bienvenida
+        clock.now = day(clock.now, 89)
+        XCTAssertEqual(m.state, .lastDays(daysLeft: 1))
+        clock.now = day(clock.now, 1)
+        XCTAssertEqual(m.state, .expired)
+    }
+    func testStatusTextsMentionNinetyDaysAndPersonalDate() {
+        let clock = Clock(date(2026, 11, 13)); let (m, _, _) = seeded(clock)
+        XCTAssertTrue(m.statusLine!.contains("90 días de 90") || m.statusLine!.contains("quedan 90 días de 90"))
+        XCTAssertFalse(m.endDateText.contains("2027") && m.endDateText.contains("9 de"))
+        let f = DateFormatter(); f.dateStyle = .long; f.timeStyle = .none; f.calendar = cal(); f.timeZone = cal().timeZone
+        XCTAssertEqual(m.endDateText, f.string(from: date(2027, 2, 10)))
     }
     func testManagerClockBackwards() {
-        let clock = Clock(date(2027, 2, 12)); let store = MemoryStore()
-        let m = manager(clock, store: store)
+        let clock = Clock(day(first, 100)); let (m, a, b) = seeded(clock)
         XCTAssertEqual(m.state, .expired)
-        clock.now = date(2026, 12, 1)
+        clock.now = day(first, 10)
         XCTAssertEqual(m.state, .expired)
-        XCTAssertEqual(manager(clock, store: store).state, .expired) // persistido
+        XCTAssertEqual(manager(clock, store: a, backup: b).state, .expired) // persistido
     }
     func testLaunchNoticesOncePerDay() {
-        let clock = Clock(date(2026, 11, 11)); let m = manager(clock)
+        let clock = Clock(first); let (m, _, _) = seeded(clock)
         XCTAssertEqual(m.consumeLaunchNotice(), .firstRun)
         XCTAssertEqual(m.consumeLaunchNotice(), .none) // ya visto
-        clock.now = date(2027, 1, 30)
-        XCTAssertEqual(m.consumeLaunchNotice(), .dailyReminder(daysLeft: 11))
+        clock.now = day(first, 78)
+        XCTAssertEqual(m.consumeLaunchNotice(), .dailyReminder(daysLeft: 12))
         XCTAssertEqual(m.consumeLaunchNotice(), .none) // máximo una vez al día
-        clock.now = date(2027, 1, 31, 9)
-        XCTAssertEqual(m.consumeLaunchNotice(), .dailyReminder(daysLeft: 10))
-        clock.now = date(2027, 2, 10)
+        clock.now = day(first, 79, 9)
+        XCTAssertEqual(m.consumeLaunchNotice(), .dailyReminder(daysLeft: 11))
+        clock.now = day(first, 90)
         XCTAssertEqual(m.consumeLaunchNotice(), .expired)
     }
     func testNudgeThrottle() {
-        let clock = Clock(date(2027, 3, 1)); let m = manager(clock)
+        let clock = Clock(day(first, 120)); let (m, _, _) = seeded(clock)
         XCTAssertTrue(m.shouldNudgeActivation())
         clock.now.addTimeInterval(60)
         XCTAssertFalse(m.shouldNudgeActivation())
         clock.now.addTimeInterval(TrialConfig.nudgeInterval)
         XCTAssertTrue(m.shouldNudgeActivation())
-        let t = Clock(date(2026, 11, 11))
-        XCTAssertFalse(manager(t).shouldNudgeActivation()) // en prueba no molesta
+        XCTAssertFalse(seeded(Clock(first)).0.shouldNudgeActivation()) // en prueba no molesta
     }
     func testPurchaseOpensInjectedURL() {
         var got: URL?
-        manager(Clock(date(2026, 11, 11)), opened: { got = $0 }).openPurchase()
+        manager(Clock(first), opened: { got = $0 }).openPurchase()
         XCTAssertEqual(got?.absoluteString, "https://chocolitossoft.com/premium")
+    }
+    func testFileStoreRoundTripInTempDir() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("ferry-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let fs = FileStore(url: dir.appendingPathComponent("prueba.json"))
+        XCTAssertNil(fs.string(fl))
+        fs.set("123", for: fl)
+        XCTAssertEqual(FileStore(url: dir.appendingPathComponent("prueba.json")).string(fl), "123")
+        let attrs = try? FileManager.default.attributesOfItem(atPath: dir.appendingPathComponent("prueba.json").path)
+        XCTAssertEqual((attrs?[.posixPermissions] as? NSNumber)?.intValue, 0o600)
     }
 
     // MARK: Bloqueo de la función principal
     func testExpiredRejectsMainFunctionAndTrialRuns() {
         var ran = 0
-        XCTAssertFalse(manager(Clock(date(2027, 2, 10))).run { ran += 1 })
+        XCTAssertFalse(seeded(Clock(day(first, 90))).0.run { ran += 1 })
         XCTAssertEqual(ran, 0)
-        XCTAssertTrue(manager(Clock(date(2026, 11, 11))).run { ran += 1 })
-        XCTAssertTrue(manager(Clock(date(2027, 2, 1))).run { ran += 1 })
+        XCTAssertTrue(seeded(Clock(first)).0.run { ran += 1 })
+        XCTAssertTrue(seeded(Clock(day(first, 89))).0.run { ran += 1 })
         XCTAssertEqual(ran, 2)
     }
 
@@ -152,8 +247,9 @@ final class TrialTests: XCTestCase {
     }
 
     func testManagerActivationLifecycle() {
-        let store = MemoryStore(); let clock = Clock(date(2027, 3, 1))
-        let m = TrialManager(store: store, clock: { clock.now }, calendar: cal(), verifier: { self.verify($0) })
+        let store = MemoryStore(); let clock = Clock(day(first, 120))
+        let bk = MemoryStore(); bk.values[fl] = ts(first); store.values[fl] = ts(first)
+        let m = TrialManager(store: store, backup: bk, clock: { clock.now }, calendar: cal(), verifier: { self.verify($0) })
         XCTAssertEqual(m.state, .expired)
         XCTAssertEqual(m.activate(key(app: "cabrio")), .failure(.wrongApp))
         XCTAssertEqual(m.state, .expired)
@@ -163,7 +259,7 @@ final class TrialTests: XCTestCase {
         XCTAssertTrue(m.allowsFeatures)
         XCTAssertEqual(m.activate(good), .failure(.alreadyActive))
         // se vuelve a verificar al arrancar
-        XCTAssertEqual(TrialManager(store: store, clock: { clock.now }, calendar: cal(), verifier: { self.verify($0) }).state, .licensed)
+        XCTAssertEqual(TrialManager(store: store, backup: bk, clock: { clock.now }, calendar: cal(), verifier: { self.verify($0) }).state, .licensed)
         m.removeLicense()
         XCTAssertEqual(m.state, .expired)
     }
@@ -198,16 +294,16 @@ final class TrialTests: XCTestCase {
             }
         }
         let keys = ["Obtener premium…", "Obtener premium", "Introducir clave…", "Introducir clave",
-                    "Versión de prueba · quedan %lld días · Premium: %@", "Último día de prueba · Premium: %@",
+                    "Versión de prueba · quedan %lld días de 90 · Premium: %@", "Último día de prueba · Premium: %@",
                     "Quedan %lld días de prueba · Premium: %@", "El periodo de prueba terminó · Premium: %@",
                     "Estás usando una versión de prueba (tester)", "Hoy es el último día de prueba", "Quedan %lld días de prueba",
-                    "Ferry está en periodo de prueba hasta el %@. Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.",
+                    "Ferry está en periodo de prueba: úsala gratis durante 90 días (hasta el %@) y ayúdanos a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.",
                     "Entendido", "Más información / Obtener premium", "El periodo de prueba terminó",
                     "Gracias por probar Ferry. Para seguir usándola, obtén la versión premium (%@, pago único).",
                     "Tus archivos de la estantería se conservan y no se tocan.", "Premium: %@ por app, pago único",
                     "Tengo una clave", "Activar", "Cerrar", "La clave no es válida. Revisa que esté completa.",
                     "Esa clave es de otra app, no de Ferry.", "Esa clave ya está activada.", "Premium activado · %@",
-                    "Quitar licencia", "La prueba termina el %@.", "Licencia"]
+                    "Quitar licencia", "Tu prueba de 90 días dura hasta el %@.", "Licencia"]
         func marks(_ s: String) -> [String] {
             (try! NSRegularExpression(pattern: "%(lld|@|d)")).matches(in: s, range: NSRange(s.startIndex..., in: s))
                 .map { String(s[Range($0.range, in: s)!]) }
